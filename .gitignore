@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Production build output
+dist/
+
+# Environment files and credentials (DO NOT COMMIT SECRETS)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

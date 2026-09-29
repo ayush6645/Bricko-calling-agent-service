@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  asterisk-gateway:
+    build: .
+    container_name: bricko-whatsapp-gateway
+    restart: unless-stopped
+    ports:
+      - "5060:5060/udp"
+      - "5060:5060/tcp"
+      - "5061:5061/tcp"
+      - "10000-10100:10000-10100/udp"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
