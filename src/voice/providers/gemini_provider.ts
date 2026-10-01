@@ -7,13 +7,12 @@ import WebSocket from "ws";
 import { settings } from "../../infrastructure/config/settings";
 import { IVoiceProvider, VoiceProviderOptions } from "./base";
 import {
+  buildLiveEndpoint,
   buildSetupPayload,
   buildAudioInputPayload,
   buildClientTextPayload,
-  parseServerMessage,
 } from "./gemini_protocol";
-
-const HANGUP_TOKEN = "[ACTION: HANGUP]";
+import { parseServerMessage, ParsedGeminiMessage } from "./gemini_parser";
 
 export class GeminiLiveProvider extends EventEmitter implements IVoiceProvider {
   private ws: WebSocket | null = null;
@@ -27,13 +26,14 @@ export class GeminiLiveProvider extends EventEmitter implements IVoiceProvider {
       model: options.model || settings.gemini.model,
       voice: options.voice || settings.gemini.voice,
       thinkingLevel: options.thinkingLevel || settings.gemini.thinkingLevel,
-      inputSampleRate: options.inputSampleRate || settings.telephony.inputSampleRate,
+      inputSampleRate: options.inputSampleRate || settings.telephony.sampleRate,
       systemInstruction: options.systemInstruction || "",
     };
   }
 
   public async connect(): Promise<void> {
-    const url = `wss://${settings.gemini.host}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${this.opts.apiKey}`;
+    const { host, apiVersion } = settings.gemini;
+    const url = buildLiveEndpoint(host, apiVersion, this.opts.apiKey);
 
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(url);
@@ -42,15 +42,29 @@ export class GeminiLiveProvider extends EventEmitter implements IVoiceProvider {
         this.ws?.send(payload);
       });
       this.ws.on("message", (raw: WebSocket.RawData) => {
-        const parsed = parseServerMessage(raw.toString(), HANGUP_TOKEN);
-        if (parsed.isSetupComplete) { this.isConnected = true; resolve(); }
-        parsed.audioChunks.forEach((buf) => this.emit("audio", buf));
-        parsed.textParts.forEach((t) => this.emit("text", t));
-        if (parsed.isHangupTriggered) this.emit("hangup");
+        if (this.handleMessage(raw.toString())) { this.isConnected = true; resolve(); }
       });
       this.ws.on("error", (err) => { this.emit("error", err); if (!this.isConnected) reject(err); });
       this.ws.on("close", (code, reason) => { this.isConnected = false; this.emit("close", { code, reason: reason.toString() }); });
     });
+  }
+
+  /** Dispatches one server message as provider events; returns true on setup completion. */
+  private handleMessage(rawJson: string): boolean {
+    let parsed: ParsedGeminiMessage;
+    try {
+      parsed = parseServerMessage(rawJson);
+    } catch (err) {
+      this.emit("error", new Error(`Unparseable Gemini message: ${(err as Error).message}`));
+      return false;
+    }
+    parsed.audioChunks.forEach((buf) => this.emit("audio", buf));
+    if (parsed.transcript) this.emit("text", parsed.transcript);
+    if (parsed.isInterrupted) this.emit("interrupted");
+    if (parsed.isTurnComplete) this.emit("turnComplete");
+    // end_call gets no toolResponse: the call is torn down once the farewell has played
+    if (parsed.isEndCallRequested) this.emit("hangup");
+    return parsed.isSetupComplete;
   }
 
   public sendAudio(pcmChunk: Buffer): void {

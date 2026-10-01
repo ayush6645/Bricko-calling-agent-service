@@ -1,0 +1,44 @@
+; PJSIP configuration for WhatsApp Business Calling (Meta SIP over TLS + SDES).
+; Rendered at container start by entrypoint.sh; every ${VAR} comes from gateway/.env.
+
+[transport-udp]
+type=transport
+protocol=udp
+bind=${SIP_BIND_ADDRESS}:${SIP_UDP_PORT}
+local_net=${SIP_LOCAL_NET}
+external_media_address=${SIP_EXTERNAL_ADDRESS}
+external_signaling_address=${SIP_EXTERNAL_ADDRESS}
+
+[transport-tls]
+type=transport
+protocol=tls
+bind=${SIP_BIND_ADDRESS}:${SIP_TLS_PORT}
+cert_file=${SIP_TLS_CERT_FILE}
+priv_key_file=${SIP_TLS_KEY_FILE}
+method=${SIP_TLS_METHOD}
+verify_client=no
+verify_server=no
+local_net=${SIP_LOCAL_NET}
+external_media_address=${SIP_EXTERNAL_ADDRESS}
+external_signaling_address=${SIP_EXTERNAL_ADDRESS}
+
+[whatsapp-endpoint]
+type=endpoint
+context=whatsapp-inbound
+transport=transport-tls
+disallow=all
+allow=${SIP_ALLOWED_CODECS}
+direct_media=no
+rtp_symmetric=yes
+force_rport=yes
+; Meta's Record-Route/Contact headers must stay untouched, otherwise calls drop after ~32 s
+rewrite_contact=no
+media_use_received_transport=yes
+media_encryption=sdes
+identify_by=header
+
+; Only accept INVITEs that carry Meta's header (not any IP on the internet)
+[whatsapp-identify]
+type=identify
+endpoint=whatsapp-endpoint
+match_header=${META_SIP_MATCH_HEADER}

@@ -1,14 +1,22 @@
 FROM alpine:3.19
 
+# asterisk-opus: WhatsApp's SIP leg negotiates Opus
+# gettext-envsubst: renders config templates from environment variables at startup
 RUN apk add --no-cache \
     asterisk \
     asterisk-sample-config \
+    asterisk-opus \
     asterisk-speex \
-    asterisk-srtp
+    asterisk-srtp \
+    gettext-envsubst
 
-COPY pjsip.conf /etc/asterisk/pjsip.conf
-COPY extensions.conf /etc/asterisk/extensions.conf
+COPY templates/ /etc/asterisk/templates/
+COPY entrypoint.sh /usr/local/bin/gateway-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/gateway-entrypoint.sh \
+    && chmod +x /usr/local/bin/gateway-entrypoint.sh
 
-EXPOSE 5060/udp 5060/tcp 5061/tcp 10000-10100/udp
+# Ports come from gateway/.env; the container uses host networking (see docker-compose.yml),
+# so no EXPOSE is needed.
 
+ENTRYPOINT ["/usr/local/bin/gateway-entrypoint.sh"]
 CMD ["asterisk", "-f", "-vvv"]

@@ -1,0 +1,19 @@
+[general]
+static=yes
+writeprotect=no
+
+; Dialplan for inbound WhatsApp calls.
+; Rendered at container start by entrypoint.sh; only ${AUDIOSOCKET_ADDRESS} is substituted,
+; Asterisk expressions such as ${UUID()} are left intact.
+
+[whatsapp-inbound]
+; Meta sends the business number in E.164 form (+<number>) as the Request-URI user
+exten => _+X.,1,Goto(bricko-agent,s,1)
+exten => _X.,1,Goto(bricko-agent,s,1)
+exten => s,1,Goto(bricko-agent,s,1)
+
+[bricko-agent]
+; Unique UUID per call, so agent logs can be matched to this channel
+exten => s,1,Answer()
+same => n,AudioSocket(${UUID()},${AUDIOSOCKET_ADDRESS})
+same => n,Hangup()

@@ -1,32 +1,36 @@
 /**
- * Audio resampler and chunking utilities for Telephony AudioSocket.
- * Converts 24kHz Gemini PCM to standard 8kHz Telephone SLIN in 20ms frames (320 bytes).
+ * PCM resampling and framing utilities for 16-bit mono signed-linear audio.
+ * Sample rates are passed in by the caller (see settings), never assumed.
  */
 
-const DOWNSAMPLE_RATIO = 3; // 24000Hz / 8000Hz = 3
 const BYTES_PER_SAMPLE = 2; // 16-bit PCM
-const SAMPLES_PER_20MS = 160; // 8000 samples/sec * 0.020 sec = 160 samples
-export const TELEPHONY_FRAME_BYTES = SAMPLES_PER_20MS * BYTES_PER_SAMPLE; // 320 bytes
+const MS_PER_SECOND = 1000;
 
-export function downsample24kTo8k(pcm24k: Buffer): Buffer {
-  const numSamples24k = Math.floor(pcm24k.length / BYTES_PER_SAMPLE);
-  const numSamples8k = Math.floor(numSamples24k / DOWNSAMPLE_RATIO);
-  const outBuffer = Buffer.alloc(numSamples8k * BYTES_PER_SAMPLE);
+/**
+ * Resamples 16-bit mono PCM between arbitrary rates.
+ * Downsampling averages each source window (a simple low-pass that avoids the
+ * harsh aliasing of plain sample dropping); upsampling repeats the nearest sample.
+ */
+export function resamplePcm16(pcm: Buffer, fromRate: number, toRate: number): Buffer {
+  if (fromRate === toRate) return pcm;
 
-  for (let i = 0; i < numSamples8k; i++) {
-    const sample24kOffset = i * DOWNSAMPLE_RATIO * BYTES_PER_SAMPLE;
-    const sampleValue = pcm24k.readInt16LE(sample24kOffset);
-    outBuffer.writeInt16LE(sampleValue, i * BYTES_PER_SAMPLE);
+  const inSamples = Math.floor(pcm.length / BYTES_PER_SAMPLE);
+  const ratio = fromRate / toRate;
+  const outSamples = Math.floor(inSamples / ratio);
+  const out = Buffer.alloc(outSamples * BYTES_PER_SAMPLE);
+
+  for (let i = 0; i < outSamples; i++) {
+    const start = Math.floor(i * ratio);
+    const end = Math.max(start + 1, Math.min(inSamples, Math.floor((i + 1) * ratio)));
+    let sum = 0;
+    for (let s = start; s < end; s++) sum += pcm.readInt16LE(s * BYTES_PER_SAMPLE);
+    out.writeInt16LE(Math.round(sum / (end - start)), i * BYTES_PER_SAMPLE);
   }
 
-  return outBuffer;
+  return out;
 }
 
-export function chunkAudio(pcm: Buffer, chunkSize: number = TELEPHONY_FRAME_BYTES): Buffer[] {
-  const chunks: Buffer[] = [];
-  for (let offset = 0; offset < pcm.length; offset += chunkSize) {
-    const end = Math.min(offset + chunkSize, pcm.length);
-    chunks.push(pcm.subarray(offset, end));
-  }
-  return chunks;
+/** Size in bytes of one PCM frame of the given duration (e.g. 8 kHz x 20 ms = 320 bytes). */
+export function pcm16FrameBytes(sampleRate: number, frameDurationMs: number): number {
+  return Math.round((sampleRate * frameDurationMs) / MS_PER_SECOND) * BYTES_PER_SAMPLE;
 }

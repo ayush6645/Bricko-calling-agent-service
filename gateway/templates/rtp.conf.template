@@ -1,0 +1,6 @@
+; RTP media port range. Must match the UDP range opened in the VM firewall.
+; Rendered at container start by entrypoint.sh from gateway/.env.
+
+[general]
+rtpstart=${RTP_PORT_START}
+rtpend=${RTP_PORT_END}
