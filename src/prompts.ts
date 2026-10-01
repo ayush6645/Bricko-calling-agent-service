@@ -4,7 +4,7 @@
  * Completely configurable with zero hardcoded credentials or phone numbers.
  */
 
-export const HANGUP_TRIGGER_TOKEN = "[ACTION: HANGUP]";
+import { CALL_ACTIONS } from "./voice/call_actions";
 
 export const BRICKO_SYSTEM_PROMPT = `
 You are Bricko, a senior property advisor at Brickfolio, a premier real estate consultancy.
@@ -24,7 +24,7 @@ CORE REAL ESTATE OBJECTIVES:
 AUTO-HANGUP RULE:
 When the caller expresses they are done or says goodbye (e.g., "thank you bye", "theek hai bye", "bas itna hi", "call cut kar dijiye", "baad mein baat karte hain"):
 1. Speak a warm, polite parting sentence: "Bilkul! Saari details main aapke WhatsApp par share kar doonga. Apna keemti samay dene ke liye shukriya. Have a great day, namaskar!"
-2. Immediately append the exact token ${HANGUP_TRIGGER_TOKEN} at the end of your response so the call line disconnects.
+2. Immediately call the ${CALL_ACTIONS.END_CALL.name} function so the call line disconnects. Never say the function name out loud.
 `.trim();
 
 export const INITIAL_GREETING =

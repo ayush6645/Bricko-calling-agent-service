@@ -1,0 +1,4 @@
+# Files executed or parsed inside the Linux gateway container must keep LF endings
+*.sh text eol=lf
+gateway/templates/* text eol=lf
+gateway/Dockerfile text eol=lf

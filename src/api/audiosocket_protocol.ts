@@ -46,6 +46,14 @@ export function buildAudioSocketFrame(
 }
 
 /**
+ * Formats the 16-byte UUID payload Asterisk sends first on every connection.
+ */
+export function decodeUuidPayload(payload: Buffer): string {
+  const hex = payload.toString("hex");
+  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join("-");
+}
+
+/**
  * Parses the next AudioSocket frame from an accumulated byte buffer.
  */
 export function parseAudioFrame(buffer: Buffer): DecodedFrame | null {

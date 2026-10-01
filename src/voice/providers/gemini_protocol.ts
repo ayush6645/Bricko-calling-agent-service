@@ -1,12 +1,13 @@
 /**
- * Pure functional helpers for building and parsing Gemini Live messages.
+ * Pure functional helpers for building Gemini Live client messages.
+ * Server messages are parsed in gemini_parser.ts.
  */
 
-export interface ParsedGeminiMessage {
-  isSetupComplete: boolean;
-  audioChunks: Buffer[];
-  textParts: string[];
-  isHangupTriggered: boolean;
+import { ALL_CALL_ACTIONS } from "../call_actions";
+
+export function buildLiveEndpoint(host: string, apiVersion: string, apiKey: string): string {
+  const service = `google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateContent`;
+  return `wss://${host}/ws/${service}?key=${encodeURIComponent(apiKey)}`;
 }
 
 export function buildSetupPayload(
@@ -25,6 +26,13 @@ export function buildSetupPayload(
         },
         thinkingConfig: { thinkingLevel },
       },
+      // Text transcript of what the AI speaks (audio-only replies carry no text parts)
+      outputAudioTranscription: {},
+      tools: [
+        {
+          functionDeclarations: ALL_CALL_ACTIONS.map(({ name, description }) => ({ name, description })),
+        },
+      ],
     },
   };
   if (systemInstruction) {
@@ -36,7 +44,7 @@ export function buildSetupPayload(
 export function buildAudioInputPayload(pcmChunk: Buffer, rate: number): string {
   return JSON.stringify({
     realtimeInput: {
-      mediaChunks: [{ mimeType: `audio/pcm;rate=${rate}`, data: pcmChunk.toString("base64") }],
+      audio: { mimeType: `audio/pcm;rate=${rate}`, data: pcmChunk.toString("base64") },
     },
   });
 }
@@ -48,28 +56,4 @@ export function buildClientTextPayload(text: string): string {
       turnComplete: true,
     },
   });
-}
-
-export function parseServerMessage(rawJson: string, hangupToken?: string): ParsedGeminiMessage {
-  const result: ParsedGeminiMessage = {
-    isSetupComplete: false,
-    audioChunks: [],
-    textParts: [],
-    isHangupTriggered: false,
-  };
-  const response = JSON.parse(rawJson);
-
-  if (response.setupComplete) result.isSetupComplete = true;
-
-  const parts = response.serverContent?.modelTurn?.parts;
-  if (Array.isArray(parts)) {
-    for (const p of parts) {
-      if (p.inlineData?.data) result.audioChunks.push(Buffer.from(p.inlineData.data, "base64"));
-      if (p.text) {
-        result.textParts.push(p.text);
-        if (hangupToken && p.text.includes(hangupToken)) result.isHangupTriggered = true;
-      }
-    }
-  }
-  return result;
 }
