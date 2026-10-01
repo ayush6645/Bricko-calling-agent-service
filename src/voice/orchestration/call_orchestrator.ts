@@ -5,6 +5,7 @@
 import { logger } from "../../infrastructure/logger";
 import { TelephonySession } from "../../api/telephony_adapter";
 import { IVoiceProvider } from "../providers/base";
+import { downsample24kTo8k, chunkAudio } from "../audio_resampler";
 
 const AUTO_HANGUP_GRACE_PERIOD_MS = 1500;
 
@@ -21,9 +22,11 @@ export function orchestrateCall(
     provider.sendAudio(pcm);
   });
 
-  // 2. AI Voice Audio -> Caller's Phone Speaker
-  provider.on("audio", (pcm: Buffer) => {
-    session.sendAudio(pcm);
+  // 2. AI Voice Audio -> Caller's Phone Speaker (24kHz -> 8kHz in 320B frames)
+  provider.on("audio", (pcm24k: Buffer) => {
+    const pcm8k = downsample24kTo8k(pcm24k);
+    const frames = chunkAudio(pcm8k);
+    frames.forEach((frame) => session.sendAudio(frame));
   });
 
   // 3. Auto-Hangup detection (farewell detected)
