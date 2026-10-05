@@ -26,8 +26,9 @@ export function buildSetupPayload(
         },
         thinkingConfig: { thinkingLevel },
       },
-      // Text transcript of what the AI speaks (audio-only replies carry no text parts)
+      // Text transcripts of both sides (audio-only replies carry no text parts)
       outputAudioTranscription: {},
+      inputAudioTranscription: {},
       tools: [
         {
           functionDeclarations: ALL_CALL_ACTIONS.map(({ name, description }) => ({ name, description })),

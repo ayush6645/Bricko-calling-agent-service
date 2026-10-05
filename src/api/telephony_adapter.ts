@@ -32,7 +32,10 @@ export class TelephonySession extends EventEmitter {
     while (frame) {
       this.buffer = frame.remainingBuffer;
       if (frame.type === AudioSocketMessageType.AUDIO) this.emit("audio", frame.payload);
-      if (frame.type === AudioSocketMessageType.UUID) this.channelUuid = decodeUuidPayload(frame.payload);
+      if (frame.type === AudioSocketMessageType.UUID) {
+        this.channelUuid = decodeUuidPayload(frame.payload);
+        this.emit("uuid", this.channelUuid);
+      }
       if (frame.type === AudioSocketMessageType.ERROR) this.emit("error", new Error("Asterisk reported an AudioSocket error"));
       if (frame.type === AudioSocketMessageType.HANGUP) { this.emit("hangup"); this.hangup(); }
       frame = parseAudioFrame(this.buffer);

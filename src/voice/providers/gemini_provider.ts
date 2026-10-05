@@ -59,6 +59,7 @@ export class GeminiLiveProvider extends EventEmitter implements IVoiceProvider {
       return false;
     }
     parsed.audioChunks.forEach((buf) => this.emit("audio", buf));
+    if (parsed.callerTranscript) this.emit("callerText", parsed.callerTranscript);
     if (parsed.transcript) this.emit("text", parsed.transcript);
     if (parsed.isInterrupted) this.emit("interrupted");
     if (parsed.isTurnComplete) this.emit("turnComplete");

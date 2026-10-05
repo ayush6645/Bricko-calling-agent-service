@@ -18,7 +18,10 @@ export interface IVoiceProvider {
   disconnect(): void;
 
   on(event: "audio", listener: (pcmChunk: Buffer) => void): this;
+  /** Transcript fragment of what the AI is speaking. */
   on(event: "text", listener: (text: string) => void): this;
+  /** Transcript fragment of what the caller is saying. */
+  on(event: "callerText", listener: (text: string) => void): this;
   /** The AI finished its spoken turn (no more audio until the caller speaks). */
   on(event: "turnComplete", listener: () => void): this;
   /** The caller started speaking over the AI; any queued AI audio is stale. */

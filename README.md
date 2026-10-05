@@ -40,6 +40,15 @@ gateway/
 └── docker-compose.yml
 ```
 
+## Call Records
+For every call the gateway posts the caller's details (number, WhatsApp name, country,
+WhatsApp call/user IDs, business number IDs, SIP call ID, received/answered times) to the
+agent's loopback endpoint (`METADATA_*` in `.env`, `AGENT_METADATA_URL` in `gateway/.env`)
+before audio starts. When the call ends the agent logs one `CALL_RECORD {…}` JSON line with
+those details, connect/end times (UTC), duration, end reason and the two-sided transcript
+(`lead` / `bricko` turns in spoken order). Set `CALL_LOG_TRANSCRIPTS=true` to also log turns live,
+and `LOG_TIMEZONE` for readable log times.
+
 ## WhatsApp Gateway Deployment (VM)
 1. Point a DNS A record (e.g. `sip.yourdomain.com`) at the VM's public IP.
 2. Issue a certificate for it (e.g. `certbot certonly --standalone -d sip.yourdomain.com`) and copy

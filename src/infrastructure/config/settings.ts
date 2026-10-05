@@ -41,6 +41,19 @@ export const settings = {
     hangupGraceMs: envInt("CALL_HANGUP_GRACE_MS", 1500),
     logTranscripts: env("CALL_LOG_TRANSCRIPTS", "false") === "true",
   },
+  // Local-only HTTP endpoint the Asterisk gateway posts caller details to before AudioSocket
+  metadata: {
+    host: env("METADATA_HOST", "127.0.0.1"),
+    port: envInt("METADATA_PORT", 8001),
+    path: env("METADATA_PATH", "/calls"),
+    maxBodyBytes: envInt("METADATA_MAX_BODY_BYTES", 8192),
+    // Unclaimed caller details are dropped after this long (e.g. AudioSocket never connected)
+    ttlMs: envInt("METADATA_TTL_MS", 60000),
+  },
+  logging: {
+    // IANA zone for human-readable log timestamps; stored records always use UTC ISO-8601
+    timeZone: env("LOG_TIMEZONE", "UTC"),
+  },
 } as const;
 
 export type Settings = typeof settings;

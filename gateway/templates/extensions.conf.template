@@ -3,20 +3,55 @@ static=yes
 writeprotect=no
 
 ; Dialplan for inbound WhatsApp calls.
-; Rendered at container start by entrypoint.sh; only ${AUDIOSOCKET_ADDRESS} is substituted,
-; Asterisk expressions such as ${UNIQUEID} are left intact.
+; Rendered at container start by entrypoint.sh; only our ${VARS} from gateway/.env are
+; substituted, Asterisk expressions such as ${UNIQUEID} or ${CALLERID(num)} are left intact.
 
 [whatsapp-inbound]
 ; Meta sends the business number in E.164 form (+<number>) as the Request-URI user
-exten => _+X.,1,Goto(bricko-agent,s,1)
-exten => _X.,1,Goto(bricko-agent,s,1)
+exten => _+X.,1,Set(CALLED_NUMBER=${EXTEN})
+same => n,Goto(bricko-agent,s,1)
+exten => _X.,1,Set(CALLED_NUMBER=${EXTEN})
+same => n,Goto(bricko-agent,s,1)
 exten => s,1,Goto(bricko-agent,s,1)
 
 [bricko-agent]
+exten => s,1,Gosub(now-epoch,s,1)
+same => n,Set(RECEIVED_EPOCH=${NOW_EPOCH})
+same => n,Answer()
+same => n,Gosub(now-epoch,s,1)
+same => n,Set(ANSWERED_EPOCH=${NOW_EPOCH})
 ; AudioSocket requires a UUID-formatted call ID. Asterisk 20 has no UUID() function,
 ; so derive a unique one from the channel's UNIQUEID (agent logs show it for correlation).
-exten => s,1,Answer()
 same => n,Set(CALL_HASH=${MD5(${UNIQUEID})})
 same => n,Set(CALL_UUID=${CALL_HASH:0:8}-${CALL_HASH:8:4}-${CALL_HASH:12:4}-${CALL_HASH:16:4}-${CALL_HASH:20:12})
+same => n,Gosub(post-caller-details,s,1)
 same => n,AudioSocket(${CALL_UUID},${AUDIOSOCKET_ADDRESS})
 same => n,Hangup()
+
+; Posts caller/business details to the agent under CALL_UUID before audio starts.
+; Field names are a contract with src/calls/call_metadata.ts; the x-wa-meta-* names are
+; the SIP headers Meta adds to every WhatsApp call INVITE.
+; A failed post only loses metadata: the call itself still proceeds.
+[post-caller-details]
+exten => s,1,Set(CURLOPT(conntimeout)=${AGENT_METADATA_TIMEOUT_SEC})
+same => n,Set(CURLOPT(httptimeout)=${AGENT_METADATA_TIMEOUT_SEC})
+same => n,Set(F=caller_number=${URIENCODE(${CALLERID(num)})})
+same => n,Set(F=${F}&caller_name=${URIENCODE(${CALLERID(name)})})
+same => n,Set(F=${F}&caller_country=${URIENCODE(${PJSIP_HEADER(read,x-wa-meta-country-code)})})
+same => n,Set(F=${F}&wa_call_id=${URIENCODE(${PJSIP_HEADER(read,x-wa-meta-wacid)})})
+same => n,Set(F=${F}&wa_user_id=${URIENCODE(${PJSIP_HEADER(read,x-wa-meta-user-id)})})
+same => n,Set(F=${F}&business_number=${URIENCODE(${CALLED_NUMBER})})
+same => n,Set(F=${F}&business_phone_number_id=${URIENCODE(${PJSIP_HEADER(read,x-wa-meta-phone-number-id)})})
+same => n,Set(F=${F}&business_account_id=${URIENCODE(${PJSIP_HEADER(read,x-wa-meta-owner-business-id)})})
+same => n,Set(F=${F}&sip_call_id=${URIENCODE(${CHANNEL(pjsip,call-id)})})
+same => n,Set(F=${F}&gateway_channel_id=${URIENCODE(${UNIQUEID})})
+same => n,Set(F=${F}&gateway_received_epoch=${RECEIVED_EPOCH}&gateway_answered_epoch=${ANSWERED_EPOCH})
+same => n,Set(POST_RESULT=${CURL(${AGENT_METADATA_URL}/${CALL_UUID},${F})})
+same => n,Return()
+
+; Sets NOW_EPOCH to the current Unix time with milliseconds ("1791199434.123"); falls back
+; to whole seconds (${EPOCH}) if this platform's strftime cannot format %s.
+[now-epoch]
+exten => s,1,Set(NOW_EPOCH=${STRFTIME(,,%s.%3q)})
+same => n,ExecIf($[${REGEX("^[0-9]+[.][0-9][0-9][0-9]$" ${NOW_EPOCH})} = 0]?Set(NOW_EPOCH=${EPOCH}))
+same => n,Return()

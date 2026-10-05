@@ -8,17 +8,26 @@ import { TelephonySession } from "../../api/telephony_adapter";
 import { IVoiceProvider } from "../providers/base";
 import { resamplePcm16, pcm16FrameBytes } from "../audio_resampler";
 import { AudioPlayout } from "../audio_playout";
+import { attachCallRecord } from "./call_recording";
+import { CallMetadataRegistry } from "../../calls/call_metadata_registry";
+import { CallRecordSink } from "../../calls/call_record_sink";
+
+export interface CallDependencies {
+  registry: CallMetadataRegistry;
+  sink: CallRecordSink;
+}
 
 export function orchestrateCall(
   session: TelephonySession,
   provider: IVoiceProvider,
+  deps: CallDependencies,
   openingGreeting?: string
 ): void {
   const callId = session.id;
   const { telephony, gemini, call } = settings;
   const frameBytes = pcm16FrameBytes(telephony.sampleRate, telephony.frameDurationMs);
   const playout = new AudioPlayout(frameBytes, telephony.frameDurationMs, (frame) => session.sendAudio(frame));
-  let transcript = "";
+  const record = attachCallRecord(session, provider, deps.registry);
   let ended = false;
   logger.call(callId, "Bridging telephony session to AI voice provider.");
 
@@ -26,10 +35,12 @@ export function orchestrateCall(
   const endCall = (reason: string): void => {
     if (ended) return;
     ended = true;
-    logger.call(callId, `Call ended: ${reason}`);
+    record.end(reason);
+    logger.call(callId, `Call ended: ${reason} (duration ${record.durationSec?.toFixed(1)}s)`);
     playout.clear();
     provider.disconnect();
     session.hangup();
+    deps.sink.save(record).catch((err: Error) => logger.error(`[${callId}] Saving call record failed: ${err.message}`));
   };
 
   // 1. Caller audio -> AI provider
@@ -40,12 +51,7 @@ export function orchestrateCall(
     playout.enqueue(resamplePcm16(pcm, gemini.outputSampleRate, telephony.sampleRate));
   });
   provider.on("interrupted", () => playout.clear()); // caller barged in
-  provider.on("text", (fragment: string) => { transcript += fragment; });
-  provider.on("turnComplete", () => {
-    playout.flush();
-    if (call.logTranscripts && transcript) logger.call(callId, `Bricko: ${transcript.trim()}`);
-    transcript = "";
-  });
+  provider.on("turnComplete", () => playout.flush());
 
   // 3. AI ended the call: let the farewell finish playing before hanging up
   provider.on("hangup", () => {

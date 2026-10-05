@@ -9,6 +9,8 @@ export interface ParsedGeminiMessage {
   audioChunks: Buffer[];
   /** Fragment of the transcript of what the AI is speaking. */
   transcript: string;
+  /** Fragment of the transcript of what the caller is saying. */
+  callerTranscript: string;
   isTurnComplete: boolean;
   isInterrupted: boolean;
   isEndCallRequested: boolean;
@@ -34,6 +36,7 @@ export function parseServerMessage(rawJson: string): ParsedGeminiMessage {
       .filter((part) => part.inlineData?.data)
       .map((part) => Buffer.from(part.inlineData!.data!, "base64")),
     transcript: content.outputTranscription?.text ?? "",
+    callerTranscript: content.inputTranscription?.text ?? "",
     isTurnComplete: Boolean(content.turnComplete),
     isInterrupted: Boolean(content.interrupted),
     isEndCallRequested: functionCalls.some((call) => call.name === CALL_ACTIONS.END_CALL.name),
