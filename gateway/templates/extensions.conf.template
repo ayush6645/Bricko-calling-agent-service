@@ -4,7 +4,7 @@ writeprotect=no
 
 ; Dialplan for inbound WhatsApp calls.
 ; Rendered at container start by entrypoint.sh; only ${AUDIOSOCKET_ADDRESS} is substituted,
-; Asterisk expressions such as ${UUID()} are left intact.
+; Asterisk expressions such as ${UNIQUEID} are left intact.
 
 [whatsapp-inbound]
 ; Meta sends the business number in E.164 form (+<number>) as the Request-URI user
@@ -13,7 +13,10 @@ exten => _X.,1,Goto(bricko-agent,s,1)
 exten => s,1,Goto(bricko-agent,s,1)
 
 [bricko-agent]
-; Unique UUID per call, so agent logs can be matched to this channel
+; AudioSocket requires a UUID-formatted call ID. Asterisk 20 has no UUID() function,
+; so derive a unique one from the channel's UNIQUEID (agent logs show it for correlation).
 exten => s,1,Answer()
-same => n,AudioSocket(${UUID()},${AUDIOSOCKET_ADDRESS})
+same => n,Set(CALL_HASH=${MD5(${UNIQUEID})})
+same => n,Set(CALL_UUID=${CALL_HASH:0:8}-${CALL_HASH:8:4}-${CALL_HASH:12:4}-${CALL_HASH:16:4}-${CALL_HASH:20:12})
+same => n,AudioSocket(${CALL_UUID},${AUDIOSOCKET_ADDRESS})
 same => n,Hangup()
