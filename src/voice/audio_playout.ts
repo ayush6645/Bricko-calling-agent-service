@@ -1,7 +1,8 @@
 /**
  * Real-time paced audio playout for the telephony leg.
- * Releases fixed-size PCM frames at the rate the phone plays them, so audio is
- * never dumped in bursts, and queued speech can be dropped when the caller barges in.
+ * Releases fixed-size PCM frames at the rate the phone plays them instead of all
+ * at once (a few frames may go together to catch up after timer drift), and
+ * queued speech can be dropped when the caller barges in.
  */
 
 export class AudioPlayout {

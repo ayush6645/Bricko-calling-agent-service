@@ -1,7 +1,7 @@
 /**
  * Everything known about one call, serialisable as a single snake_case JSON
- * document (the shape a future database row will store). All times are UTC
- * ISO-8601 from this host's clock and mark exact events, never estimates.
+ * document (currently written to the log; see call_record_sink.ts). All times
+ * are UTC ISO-8601 from this host's clock and mark exact events, never estimates.
  */
 
 import { CallerMetadata } from "./call_metadata";

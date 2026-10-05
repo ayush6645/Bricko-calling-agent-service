@@ -8,8 +8,8 @@ const MS_PER_SECOND = 1000;
 
 /**
  * Resamples 16-bit mono PCM between arbitrary rates.
- * Downsampling averages each source window (a simple low-pass that avoids the
- * harsh aliasing of plain sample dropping); upsampling repeats the nearest sample.
+ * Downsampling averages each source window (a simple low-pass that reduces the
+ * aliasing of plain sample dropping); upsampling repeats the nearest sample.
  */
 export function resamplePcm16(pcm: Buffer, fromRate: number, toRate: number): Buffer {
   if (fromRate === toRate) return pcm;

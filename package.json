@@ -1,7 +1,7 @@
 {
   "name": "bricko-voice-core",
   "version": "1.0.0",
-  "description": "Bricko Real-Time Voice Calling Engine for WhatsApp & Telephony",
+  "description": "Voice agent for inbound WhatsApp Business calls (Asterisk AudioSocket + Gemini Live)",
   "main": "dist/main.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/main.ts",

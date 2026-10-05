@@ -40,7 +40,7 @@ for file in "$SIP_TLS_CERT_FILE" "$SIP_TLS_KEY_FILE"; do
   [ -r "$file" ] || fail "TLS file not found or unreadable: $file (Meta only connects over TLS with a valid certificate)"
 done
 
-# Substitute only our variables, so Asterisk dialplan expressions like ${UUID()} survive.
+# Substitute only our variables, so Asterisk dialplan expressions like ${UNIQUEID} survive.
 SUBSTITUTIONS=$(for name in $REQUIRED_VARS; do printf '${%s} ' "$name"; done)
 
 for template in "$TEMPLATE_DIR"/*.conf.template; do

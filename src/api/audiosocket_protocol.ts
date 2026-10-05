@@ -1,6 +1,7 @@
 /**
- * AudioSocket Protocol Specification and Framing Utilities.
- * Zero magic numbers; all offsets, header sizes, and frame types are derived.
+ * AudioSocket protocol framing (Asterisk app_audiosocket).
+ * Field widths and frame types are named constants from the protocol spec;
+ * offsets and header size are computed from them.
  */
 
 // Protocol Header Field Widths (in bytes)

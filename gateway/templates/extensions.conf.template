@@ -30,7 +30,8 @@ same => n,Hangup()
 
 ; Posts caller/business details to the agent under CALL_UUID before audio starts.
 ; Field names are a contract with src/calls/call_metadata.ts; the x-wa-meta-* names are
-; the SIP headers Meta adds to every WhatsApp call INVITE.
+; SIP headers Meta sends with WhatsApp call INVITEs (as seen in live calls). A header
+; that is absent simply posts an empty value, stored as null.
 ; A failed post only loses metadata: the call itself still proceeds.
 [post-caller-details]
 exten => s,1,Set(CURLOPT(conntimeout)=${AGENT_METADATA_TIMEOUT_SEC})

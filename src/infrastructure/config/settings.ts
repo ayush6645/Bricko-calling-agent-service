@@ -27,7 +27,7 @@ export const settings = {
     thinkingLevel: env("GEMINI_THINKING_LEVEL", "LOW") as "LOW" | "HIGH",
     host: env("GEMINI_HOST", "generativelanguage.googleapis.com"),
     apiVersion: env("GEMINI_API_VERSION", "v1alpha"),
-    // Gemini Live always replies with 16-bit mono PCM at this rate
+    // Gemini Live reply audio: 16-bit mono PCM at this rate (24 kHz as documented and observed)
     outputSampleRate: envInt("GEMINI_OUTPUT_SAMPLE_RATE", 24000),
   },
   telephony: {

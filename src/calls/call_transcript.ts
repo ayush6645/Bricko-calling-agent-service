@@ -4,7 +4,7 @@
  * so no per-turn timestamps are recorded (call-level times live in CallRecord).
  */
 
-/** Same speaker labels as chat_messages.sender, so calls and chats line up per lead. */
+/** Same speaker labels as Chatbot_bricko's chat_messages.sender ("lead" / "bricko"). */
 export const SPEAKERS = { caller: "lead", ai: "bricko" } as const;
 export type Speaker = (typeof SPEAKERS)[keyof typeof SPEAKERS];
 

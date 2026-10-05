@@ -1,7 +1,6 @@
 /**
- * Bricko Voice Calling Prompts & Conversational Rules.
- * Configured for natural, fluent Hindi / Hinglish real estate consultations.
- * Completely configurable with zero hardcoded credentials or phone numbers.
+ * Persona prompt and opening greeting for the Hindi / Hinglish real-estate advisor.
+ * The text lives in this file (not in .env); it contains no credentials or phone numbers.
  */
 
 import { CALL_ACTIONS } from "./voice/call_actions";

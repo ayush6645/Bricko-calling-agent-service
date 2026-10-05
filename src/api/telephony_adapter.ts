@@ -1,5 +1,6 @@
 /**
- * Thin Telephony Ingress Adapter for WhatsApp & VoIP AudioSocket connections.
+ * AudioSocket TCP server: Asterisk opens one connection per call, wrapped here
+ * as a TelephonySession (audio in/out, call UUID, hangup).
  */
 
 import net from "net";

@@ -1,6 +1,6 @@
 /**
- * Destinations for finished call records. Today records go to the log as one
- * JSON line; a database sink can implement the same interface later.
+ * Destinations for finished call records. Implemented: the log, as one JSON line.
+ * Planned (not built): a database sink implementing the same interface.
  */
 
 import { logger } from "../infrastructure/logger";
