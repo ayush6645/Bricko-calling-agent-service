@@ -1,10 +1,12 @@
 FROM alpine:3.19
 
 # asterisk-opus: WhatsApp's SIP leg negotiates Opus
+# asterisk-curl: CURL() dialplan function, used to post caller details to the agent
 # gettext-envsubst: renders config templates from environment variables at startup
 RUN apk add --no-cache \
     asterisk \
     asterisk-sample-config \
+    asterisk-curl \
     asterisk-opus \
     asterisk-speex \
     asterisk-srtp \

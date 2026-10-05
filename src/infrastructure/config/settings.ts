@@ -27,7 +27,7 @@ export const settings = {
     thinkingLevel: env("GEMINI_THINKING_LEVEL", "LOW") as "LOW" | "HIGH",
     host: env("GEMINI_HOST", "generativelanguage.googleapis.com"),
     apiVersion: env("GEMINI_API_VERSION", "v1alpha"),
-    // Gemini Live always replies with 16-bit mono PCM at this rate
+    // Gemini Live reply audio: 16-bit mono PCM at this rate (24 kHz as documented and observed)
     outputSampleRate: envInt("GEMINI_OUTPUT_SAMPLE_RATE", 24000),
   },
   telephony: {
@@ -40,6 +40,19 @@ export const settings = {
   call: {
     hangupGraceMs: envInt("CALL_HANGUP_GRACE_MS", 1500),
     logTranscripts: env("CALL_LOG_TRANSCRIPTS", "false") === "true",
+  },
+  // Local-only HTTP endpoint the Asterisk gateway posts caller details to before AudioSocket
+  metadata: {
+    host: env("METADATA_HOST", "127.0.0.1"),
+    port: envInt("METADATA_PORT", 8001),
+    path: env("METADATA_PATH", "/calls"),
+    maxBodyBytes: envInt("METADATA_MAX_BODY_BYTES", 8192),
+    // Unclaimed caller details are dropped after this long (e.g. AudioSocket never connected)
+    ttlMs: envInt("METADATA_TTL_MS", 60000),
+  },
+  logging: {
+    // IANA zone for human-readable log timestamps; stored records always use UTC ISO-8601
+    timeZone: env("LOG_TIMEZONE", "UTC"),
   },
 } as const;
 

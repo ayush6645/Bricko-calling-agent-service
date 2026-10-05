@@ -1,6 +1,7 @@
 /**
- * Local Call Simulator for Testing Bricko Voice Engine.
- * Connects to the AudioSocket TCP server and tests the voice loop end-to-end.
+ * Local smoke test for the agent's AudioSocket server.
+ * Connects like Asterisk would and reports how much AI audio (the greeting) comes back.
+ * It sends no call UUID and no caller speech, so no caller details or caller transcript appear.
  */
 
 import net from "net";
@@ -50,7 +51,7 @@ client.on("error", (err: Error) => {
   process.exit(1);
 });
 
-// Automatically hang up after 8 seconds of receiving speech
+// Hang up 8 seconds after the script starts
 setTimeout(() => {
   console.log("\n[Simulator] Test completed. Sending hangup frame...");
   client.write(buildAudioSocketFrame(AudioSocketMessageType.HANGUP), () => {

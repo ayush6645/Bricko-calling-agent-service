@@ -31,7 +31,8 @@ allow=${SIP_ALLOWED_CODECS}
 direct_media=no
 rtp_symmetric=yes
 force_rport=yes
-; Meta's Record-Route/Contact headers must stay untouched, otherwise calls drop after ~32 s
+; Meta's Record-Route/Contact headers must stay untouched; Meta's integration guide notes
+; that altering them makes calls drop after ~32 s
 rewrite_contact=no
 media_use_received_transport=yes
 media_encryption=sdes

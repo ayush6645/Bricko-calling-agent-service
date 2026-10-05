@@ -1,5 +1,6 @@
 /**
- * Thin Telephony Ingress Adapter for WhatsApp & VoIP AudioSocket connections.
+ * AudioSocket TCP server: Asterisk opens one connection per call, wrapped here
+ * as a TelephonySession (audio in/out, call UUID, hangup).
  */
 
 import net from "net";
@@ -32,7 +33,10 @@ export class TelephonySession extends EventEmitter {
     while (frame) {
       this.buffer = frame.remainingBuffer;
       if (frame.type === AudioSocketMessageType.AUDIO) this.emit("audio", frame.payload);
-      if (frame.type === AudioSocketMessageType.UUID) this.channelUuid = decodeUuidPayload(frame.payload);
+      if (frame.type === AudioSocketMessageType.UUID) {
+        this.channelUuid = decodeUuidPayload(frame.payload);
+        this.emit("uuid", this.channelUuid);
+      }
       if (frame.type === AudioSocketMessageType.ERROR) this.emit("error", new Error("Asterisk reported an AudioSocket error"));
       if (frame.type === AudioSocketMessageType.HANGUP) { this.emit("hangup"); this.hangup(); }
       frame = parseAudioFrame(this.buffer);

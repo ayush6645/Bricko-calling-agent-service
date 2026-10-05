@@ -1,9 +1,24 @@
 /**
  * Minimal structured logger.
+ * Timestamps show the full date and time in the configured zone (LOG_TIMEZONE).
  */
 
+import { settings } from "./config/settings";
+
+// "sv-SE" formats as YYYY-MM-DD HH:mm:ss; an invalid zone throws here, at startup
+const formatter = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: settings.logging.timeZone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
 function timestamp(): string {
-  return new Date().toISOString().substring(11, 19);
+  return formatter.format(new Date());
 }
 
 export const logger = {
