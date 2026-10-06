@@ -10,25 +10,31 @@ import { orchestrateCall, CallDependencies } from "./voice/orchestration/call_or
 import { MetadataServer } from "./api/metadata_server";
 import { CallMetadataRegistry } from "./calls/call_metadata_registry";
 import { LogCallRecordSink } from "./calls/call_record_sink";
-import { BRICKO_SYSTEM_PROMPT, INITIAL_GREETING } from "./prompts";
+import { EnrichingCallRecordSink } from "./calls/enriching_record_sink";
+import { buildSystemPrompt, buildOpeningInstruction } from "./prompts/build_prompt";
+import { languageName } from "./infrastructure/config/language_settings";
 
 async function bootstrap(): Promise<void> {
-  const { telephony, metadata, gemini } = settings;
+  const { telephony, metadata, gemini, language } = settings;
   logger.info(`Starting Bricko Voice Core on ${telephony.host}:${telephony.port}`);
   logger.info(`Model: ${gemini.model} | Voice: ${gemini.voice}`);
+  logger.info(
+    `Languages: opens in ${languageName(language.defaultLanguage)}, fallback ${languageName(language.fallbackLanguage)}, ` +
+      `supported ${language.supported.map(languageName).join(", ")}`
+  );
 
   const deps: CallDependencies = {
     registry: new CallMetadataRegistry(metadata.ttlMs),
-    sink: new LogCallRecordSink(),
+    sink: new EnrichingCallRecordSink(new LogCallRecordSink()),
   };
+  const systemPrompt = buildSystemPrompt();
+  const openingInstruction = buildOpeningInstruction();
   const adapter = new TelephonyAdapter();
 
   adapter.on("call", (session) => {
     logger.call(session.id, "New call connected.");
-    const provider = new GeminiLiveProvider({
-      systemInstruction: BRICKO_SYSTEM_PROMPT,
-    });
-    orchestrateCall(session, provider, deps, INITIAL_GREETING);
+    const provider = new GeminiLiveProvider({ systemInstruction: systemPrompt });
+    orchestrateCall(session, provider, deps, openingInstruction);
   });
 
   await new MetadataServer(deps.registry).start();

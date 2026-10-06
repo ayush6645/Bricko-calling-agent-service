@@ -6,8 +6,17 @@
 
 import { CallerMetadata } from "./call_metadata";
 import { CallTranscript, TranscriptTurn } from "./call_transcript";
+import { TurnEnrichment } from "./transcript_enrichment";
+import { mergeTranscript, summarizeLanguages } from "./transcript_view";
 
 const MS_PER_SECOND = 1000;
+
+/** Outcome of post-call transcript processing (see transcript_enrichment.ts). */
+export interface TranscriptProcessing {
+  status: "pending" | "done" | "failed" | "skipped";
+  model: string | null;
+  error: string | null;
+}
 
 export class CallRecord {
   public readonly transcript: CallTranscript;
@@ -16,6 +25,14 @@ export class CallRecord {
   private readonly connectedAt = new Date();
   private endedAt: Date | null = null;
   private endReason: string | null = null;
+  private enrichment: TurnEnrichment[] | null = null;
+  private processing: TranscriptProcessing = { status: "pending", model: null, error: null };
+
+  /** Attaches the post-call processing result (enrichment only when status is "done"). */
+  public setProcessing(processing: TranscriptProcessing, enrichment: TurnEnrichment[] | null = null): void {
+    this.processing = processing;
+    this.enrichment = processing.status === "done" ? enrichment : null;
+  }
 
   constructor(public readonly callId: string, onTurn?: (turn: TranscriptTurn) => void) {
     this.transcript = new CallTranscript(onTurn);
@@ -67,7 +84,9 @@ export class CallRecord {
       duration_sec: this.durationSec,
       duration_basis: this.durationBasis,
       end_reason: this.endReason,
-      transcript: this.transcript.toJSON(),
+      languages: this.enrichment ? summarizeLanguages(this.transcript.toJSON(), this.enrichment) : null,
+      transcript_processing: this.processing,
+      transcript: mergeTranscript(this.transcript.toJSON(), this.enrichment),
     };
   }
 }
