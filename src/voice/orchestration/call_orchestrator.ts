@@ -21,7 +21,7 @@ export function orchestrateCall(
   session: TelephonySession,
   provider: IVoiceProvider,
   deps: CallDependencies,
-  openingGreeting?: string
+  openingInstruction?: string
 ): void {
   const callId = session.id;
   const { telephony, gemini, call } = settings;
@@ -74,9 +74,7 @@ export function orchestrateCall(
   provider.connect()
     .then(() => {
       logger.call(callId, `AI Provider ready (Asterisk channel ${session.channelUuid ?? "unknown"}).`);
-      if (openingGreeting) {
-        provider.sendText(`Greet the caller immediately with: "${openingGreeting}"`);
-      }
+      if (openingInstruction) provider.sendText(openingInstruction);
     })
     .catch((err) => {
       logger.error(`[${callId}] Connection failed: ${err.message}`);

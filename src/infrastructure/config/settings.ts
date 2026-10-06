@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { loadLanguageSettings } from "./language_settings";
 
 dotenv.config();
 
@@ -29,6 +30,9 @@ export const settings = {
     apiVersion: env("GEMINI_API_VERSION", "v1alpha"),
     // Gemini Live reply audio: 16-bit mono PCM at this rate (24 kHz as documented and observed)
     outputSampleRate: envInt("GEMINI_OUTPUT_SAMPLE_RATE", 24000),
+    // Text model for non-live work (language identification in checks, transcript processing)
+    textModel: env("GEMINI_TEXT_MODEL", "gemini-3.8-flash"),
+    textApiVersion: env("GEMINI_TEXT_API_VERSION", "v1beta"),
   },
   telephony: {
     port: envInt("PORT", 8000),
@@ -40,6 +44,12 @@ export const settings = {
   call: {
     hangupGraceMs: envInt("CALL_HANGUP_GRACE_MS", 1500),
     logTranscripts: env("CALL_LOG_TRANSCRIPTS", "false") === "true",
+  },
+  // Post-call transcript processing: per-turn language, Roman-letter text, English translation
+  transcript: {
+    enrichment: env("TRANSCRIPT_ENRICHMENT", "true") === "true",
+    enrichmentTimeoutMs: envInt("TRANSCRIPT_ENRICHMENT_TIMEOUT_MS", 30000),
+    enrichmentAttempts: envInt("TRANSCRIPT_ENRICHMENT_ATTEMPTS", 3),
   },
   // Local-only HTTP endpoint the Asterisk gateway posts caller details to before AudioSocket
   metadata: {
@@ -54,6 +64,7 @@ export const settings = {
     // IANA zone for human-readable log timestamps; stored records always use UTC ISO-8601
     timeZone: env("LOG_TIMEZONE", "UTC"),
   },
+  language: loadLanguageSettings(process.env),
 } as const;
 
 export type Settings = typeof settings;
